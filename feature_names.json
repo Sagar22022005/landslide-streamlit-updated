@@ -1,0 +1,1 @@
+["elevation_m", "slope_deg", "annual_rainfall_mm", "clay_content_pct", "sand_content_pct", "silt_content_pct", "vol_water_10kpa_pct", "vol_water_33kpa_pct", "vol_water_1500kpa_pct", "distance_to_road_m", "soil_moisture", "tree_cover", "grassland", "cropland", "built_up", "bare_land"]
