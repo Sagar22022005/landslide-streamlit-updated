@@ -1,8 +1,20 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
 import json
+
+
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
+
+st.set_page_config(
+    page_title="Landslide Susceptibility Prediction",
+    page_icon="⛰️",
+    layout="wide"
+)
 
 
 # ============================================================
@@ -20,19 +32,13 @@ def load_feature_names():
         return json.load(f)
 
 
-model = load_model()
-feature_names = load_feature_names()
+try:
+    model = load_model()
+    feature_names = load_feature_names()
 
-
-# ============================================================
-# PAGE CONFIGURATION
-# ============================================================
-
-st.set_page_config(
-    page_title="Landslide Susceptibility Prediction",
-    page_icon="⛰️",
-    layout="wide"
-)
+except Exception as e:
+    st.error(f"Error loading model or feature names: {e}")
+    st.stop()
 
 
 # ============================================================
@@ -42,9 +48,25 @@ st.set_page_config(
 st.title("⛰️ Landslide Susceptibility Prediction System")
 
 st.write(
-    "Enter the environmental and terrain characteristics "
-    "to predict landslide susceptibility."
+    "An ML-based system to estimate landslide susceptibility "
+    "using environmental and terrain characteristics."
 )
+
+st.info(
+    "Select environmental parameters below to estimate "
+    "landslide susceptibility."
+)
+
+
+# ============================================================
+# MODEL INFORMATION
+# ============================================================
+
+with st.expander("Model Information"):
+    st.write("**Algorithm:** Extra Trees Classifier")
+    st.write("**Number of Estimators:** 400")
+    st.write("**Random State:** 42")
+    st.write("**Model:** ExtraTreesClassifier")
 
 
 # ============================================================
@@ -61,6 +83,8 @@ col1, col2 = st.columns(2)
 # ============================================================
 
 with col1:
+
+    st.subheader("Terrain and Soil Properties")
 
     elevation_m = st.number_input(
         "Elevation (m)",
@@ -123,6 +147,8 @@ with col1:
 
 with col2:
 
+    st.subheader("Water Content and Land Cover")
+
     vol_water_1500kpa_pct = st.number_input(
         "Volumetric Water - 1500 kPa (%)",
         min_value=0.0,
@@ -131,15 +157,17 @@ with col2:
     )
 
     distance_to_road_m = st.number_input(
-        "Distance to Road (m)",
+        "Distance to Nearest Road (m)",
         min_value=0.0,
         value=500.0
     )
 
     soil_moisture = st.number_input(
-        "Soil Moisture",
+        "Soil Moisture (m³/m³)",
         min_value=0.0,
-        value=0.20
+        max_value=1.0,
+        value=0.20,
+        step=0.01
     )
 
     st.subheader("🌳 Land Cover")
@@ -157,7 +185,7 @@ with col2:
 
 
 # ============================================================
-# CONVERT LAND COVER TO ONE-HOT ENCODING
+# LAND COVER ONE-HOT ENCODING
 # ============================================================
 
 tree_cover = 1 if land_cover == "Tree cover" else 0
@@ -168,80 +196,165 @@ bare_land = 1 if land_cover == "Bare land" else 0
 
 
 # ============================================================
-# PREDICTION BUTTON
+# PREDICTION SECTION
 # ============================================================
 
 st.divider()
 
-texture_sum = clay_content_pct + sand_content_pct + silt_content_pct
+st.header("🎯 Landslide Prediction")
+
+
+texture_sum = (
+    clay_content_pct
+    + sand_content_pct
+    + silt_content_pct
+)
 
 if abs(texture_sum - 100.0) > 1.0:
     st.warning(
-        f"Clay + sand + silt = {texture_sum:.1f}%. "
-        "Soil texture fractions normally sum to 100%."
+        f"Clay + Sand + Silt = {texture_sum:.1f}%. "
+        "Soil texture fractions normally sum to approximately 100%."
     )
+
 
 if st.button(
     "🔍 Predict Landslide Susceptibility",
-    type="primary"
+    type="primary",
+    use_container_width=True
 ):
 
-    # --------------------------------------------------------
+    # ========================================================
     # CREATE INPUT DATAFRAME
-    # --------------------------------------------------------
+    # ========================================================
 
     input_data = pd.DataFrame([{
+
         "elevation_m": elevation_m,
         "slope_deg": slope_deg,
         "annual_rainfall_mm": annual_rainfall_mm,
+
         "clay_content_pct": clay_content_pct,
         "sand_content_pct": sand_content_pct,
         "silt_content_pct": silt_content_pct,
+
         "vol_water_10kpa_pct": vol_water_10kpa_pct,
         "vol_water_33kpa_pct": vol_water_33kpa_pct,
         "vol_water_1500kpa_pct": vol_water_1500kpa_pct,
+
         "distance_to_road_m": distance_to_road_m,
         "soil_moisture": soil_moisture,
+
         "tree_cover": tree_cover,
         "grassland": grassland,
         "cropland": cropland,
         "built_up": built_up,
         "bare_land": bare_land
+
     }])
 
-    # --------------------------------------------------------
+
+    # ========================================================
+    # VALIDATE FEATURE NAMES
+    # ========================================================
+
+    missing_features = [
+        feature for feature in feature_names
+        if feature not in input_data.columns
+    ]
+
+    if missing_features:
+
+        st.error(
+            f"Missing features in input data: {missing_features}"
+        )
+        st.stop()
+
+
+    # ========================================================
     # ENSURE CORRECT FEATURE ORDER
-    # --------------------------------------------------------
+    # ========================================================
 
     input_data = input_data[feature_names]
 
-    # --------------------------------------------------------
+
+    # ========================================================
     # MAKE PREDICTION
-    # --------------------------------------------------------
+    # ========================================================
 
-    prediction = model.predict(input_data)[0]
+    try:
 
-    probability = model.predict_proba(input_data)[0][1]
+        prediction = model.predict(input_data)[0]
 
-    # --------------------------------------------------------
-    # DISPLAY RESULT
-    # --------------------------------------------------------
+        probabilities = model.predict_proba(input_data)[0]
 
-    st.subheader("🎯 Prediction Result")
+        positive_class_index = list(model.classes_).index(1)
 
-    if prediction == 1:
+        probability = probabilities[positive_class_index]
 
-        st.error(
-            "⚠️ Landslide Susceptibility: HIGH"
+
+        # ====================================================
+        # DISPLAY RESULTS
+        # ====================================================
+
+        st.subheader("📊 Prediction Results")
+
+        if prediction == 1:
+
+            st.error(
+                "⚠️ High Landslide Susceptibility"
+            )
+
+        else:
+
+            st.success(
+                "✅ Low Landslide Susceptibility"
+            )
+
+
+        st.metric(
+            "Predicted Landslide Probability",
+            f"{probability * 100:.2f}%"
         )
 
-    else:
 
-        st.success(
-            "✅ Landslide Susceptibility: LOW"
+        # ====================================================
+        # PROBABILITY VISUALIZATION
+        # ====================================================
+
+        st.write("### Susceptibility Probability")
+
+        st.progress(float(probability))
+
+        st.caption(
+            "Probability represents the model's estimated "
+            "likelihood of class 1, not a guaranteed real-world risk."
         )
 
-    st.metric(
-        "Landslide Probability",
-        f"{probability * 100:.2f}%"
-    )
+
+        # ====================================================
+        # INPUT SUMMARY
+        # ====================================================
+
+        with st.expander("View Input Parameters"):
+
+            st.dataframe(
+                input_data,
+                use_container_width=True
+            )
+
+
+    except Exception as e:
+
+        st.error(f"Prediction failed: {e}")
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.divider()
+
+st.caption(
+    "Landslide Susceptibility Prediction | "
+    "Machine Learning Project | IIT Indore"
+)
