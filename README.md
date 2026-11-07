@@ -1,38 +1,52 @@
 # ⛰️ Landslide Susceptibility Prediction System
 
-A Streamlit app that predicts landslide susceptibility from terrain,
-rainfall, soil and land-cover characteristics.
+A Streamlit application that predicts landslide susceptibility using terrain, rainfall, soil, and land-cover characteristics.
 
-## Live app
+## 🌐 Live App
 
-<!-- paste your Streamlit Cloud URL here after deploying -->
+**[Click here to access the Landslide Susceptibility Prediction System](https://zcayloyq5nueccqsxuzhzf.streamlit.app/)**
 
-## Model
+## 🤖 Model
 
-ExtraTreesClassifier (400 trees) trained on 16 features:
+ExtraTreesClassifier (400 trees) trained on 16 features.
 
-- **Terrain:** elevation, slope
-- **Climate:** annual rainfall
-- **Soil:** clay / sand / silt content, volumetric water at 10, 33 and
-  1500 kPa, soil moisture
-- **Anthropogenic:** distance to road
-- **Land cover:** tree cover, grassland, cropland, built-up, bare land
-  (one-hot encoded)
+### Features
 
-Outputs a binary susceptibility class plus a probability score.
+- **Terrain:** Elevation, slope
+- **Climate:** Annual rainfall
+- **Soil:** Clay, sand, silt content, volumetric water at 10, 33 and 1500 kPa, soil moisture
+- **Anthropogenic:** Distance to nearest road
+- **Land Cover:** Tree cover, grassland, cropland, built-up, bare land (one-hot encoded)
 
-## Running locally
+### Prediction Output
+
+The application provides:
+
+- Binary susceptibility classification (High / Low)
+- Predicted landslide probability
+
+## 💻 Running Locally
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Files
+## 📁 Project Files
 
-| File | Purpose |
-|------|---------|
-| `app.py` | Streamlit interface and prediction logic |
-| `landslide_susceptibility_model.pkl` | Trained model (compressed) |
-| `feature_names.json` | Feature order expected by the model |
-| `requirements.txt` | Python dependencies |
+| File                                 | Purpose                                  |
+| ------------------------------------ | ---------------------------------------- |
+| `app.py`                             | Streamlit interface and prediction logic |
+| `landslide_susceptibility_model.pkl` | Trained Extra Trees model                |
+| `feature_names.json`                 | Feature order expected by the model      |
+| `requirements.txt`                   | Python dependencies                      |
+
+## 🛠️ Technologies Used
+
+Python, Scikit-learn, Pandas, NumPy, Joblib, Streamlit.
+
+## 🎓 Project
+
+Landslide Susceptibility Prediction and Geospatial Risk Analysis Using Machine Learning.
+
+IIT Indore
